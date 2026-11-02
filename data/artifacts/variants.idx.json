@@ -1,0 +1,752 @@
+{
+ "format": {
+  "magic": "GLOW",
+  "version": 1,
+  "endianness": "little",
+  "headerBytes": 16
+ },
+ "aaOrder": "ACDEFGHIKLMNPQRSTVWY",
+ "sequenceLength": 238,
+ "codec": "code = (position - 1) * 20 + aaOrder.indexOf(aa); position is 1-based",
+ "variantCount": 51715,
+ "byteLength": 607970,
+ "maxMutations": 15,
+ "quantization": {
+  "min": 1.283,
+  "scale": 0.001
+ },
+ "flags": {
+  "lowConfidence": 1
+ },
+ "brightness": {
+  "scale": "log10",
+  "min": 1.28341923933,
+  "max": 4.12310906338,
+  "wildType": 3.7192121319,
+  "visibleThreshold": 2.5
+ },
+ "depthCounts": {
+  "0": 1,
+  "1": 1084,
+  "2": 12777,
+  "3": 12336,
+  "4": 9387,
+  "5": 6825,
+  "6": 4298,
+  "7": 2526,
+  "8": 1364,
+  "9": 627,
+  "10": 299,
+  "11": 118,
+  "12": 43,
+  "13": 23,
+  "14": 5,
+  "15": 2
+ },
+ "models": {
+  "esm": {
+   "file": "esm-matrix.bin",
+   "dtype": "float32",
+   "shape": [
+    238,
+    20
+   ],
+   "values": "log-probabilities, rows = positions 1..238, columns in aaOrder",
+   "label": "ESM-2",
+   "model": "facebook/esm2_t12_35M_UR50D",
+   "method": "masked-marginal",
+   "spearman": 0.1313
+  },
+  "profile": {
+   "file": "profile-matrix.bin",
+   "dtype": "float32",
+   "shape": [
+    238,
+    20
+   ],
+   "values": "log-probabilities, rows = positions 1..238, columns in aaOrder",
+   "label": "Evolutionary profile",
+   "model": "site-independent profile of ProteinGym's GFP_AEQVI MSA",
+   "method": "weighted frequencies, theta 0.2, pseudocount 1.0",
+   "spearman": 0.6636,
+   "msa": {
+    "sequences": 396,
+    "sequencesUsed": 396,
+    "effectiveSequences": 14.29,
+    "coveredPositions": [
+     2,
+     233
+    ],
+    "theta": 0.2,
+    "pseudocount": 1.0
+   }
+  }
+ },
+ "summary": {
+  "genotypesInFile": 54025,
+  "withStopCodon": 2310,
+  "variantsShipped": 51715,
+  "lowConfidenceShipped": 50035,
+  "wildTypeLogBrightness": 3.7192121319,
+  "visibleThreshold": 2.5,
+  "fractionVisible": 0.5818,
+  "minLogBrightness": 1.28341923933,
+  "maxLogBrightness": 4.12310906338,
+  "byDepth": [
+   {
+    "depth": 0,
+    "variants": 1,
+    "visible": 1,
+    "fractionVisible": 1.0,
+    "brighterThanWildType": 0
+   },
+   {
+    "depth": 1,
+    "variants": 1084,
+    "visible": 993,
+    "fractionVisible": 0.9161,
+    "brighterThanWildType": 223
+   },
+   {
+    "depth": 2,
+    "variants": 12777,
+    "visible": 11367,
+    "fractionVisible": 0.8896,
+    "brighterThanWildType": 2352
+   },
+   {
+    "depth": 3,
+    "variants": 12336,
+    "visible": 9234,
+    "fractionVisible": 0.7485,
+    "brighterThanWildType": 1489
+   },
+   {
+    "depth": 4,
+    "variants": 9387,
+    "visible": 5104,
+    "fractionVisible": 0.5437,
+    "brighterThanWildType": 633
+   },
+   {
+    "depth": 5,
+    "variants": 6825,
+    "visible": 2284,
+    "fractionVisible": 0.3347,
+    "brighterThanWildType": 238
+   },
+   {
+    "depth": 6,
+    "variants": 4298,
+    "visible": 802,
+    "fractionVisible": 0.1866,
+    "brighterThanWildType": 73
+   },
+   {
+    "depth": 7,
+    "variants": 2526,
+    "visible": 229,
+    "fractionVisible": 0.0907,
+    "brighterThanWildType": 17
+   },
+   {
+    "depth": 8,
+    "variants": 1364,
+    "visible": 61,
+    "fractionVisible": 0.0447,
+    "brighterThanWildType": 5
+   },
+   {
+    "depth": 9,
+    "variants": 627,
+    "visible": 10,
+    "fractionVisible": 0.0159,
+    "brighterThanWildType": 1
+   },
+   {
+    "depth": 10,
+    "variants": 299,
+    "visible": 1,
+    "fractionVisible": 0.0033,
+    "brighterThanWildType": 0
+   },
+   {
+    "depth": 11,
+    "variants": 118,
+    "visible": 0,
+    "fractionVisible": 0.0,
+    "brighterThanWildType": 0
+   },
+   {
+    "depth": 12,
+    "variants": 43,
+    "visible": 1,
+    "fractionVisible": 0.0233,
+    "brighterThanWildType": 0
+   },
+   {
+    "depth": 13,
+    "variants": 23,
+    "visible": 0,
+    "fractionVisible": 0.0,
+    "brighterThanWildType": 0
+   },
+   {
+    "depth": 14,
+    "variants": 5,
+    "visible": 0,
+    "fractionVisible": 0.0,
+    "brighterThanWildType": 0
+   },
+   {
+    "depth": 15,
+    "variants": 2,
+    "visible": 0,
+    "fractionVisible": 0.0,
+    "brighterThanWildType": 0
+   }
+  ]
+ },
+ "testVectors": {
+  "mutations": [
+   {
+    "mutation": "M1A",
+    "position": 1,
+    "aa": "A",
+    "code": 0
+   },
+   {
+    "mutation": "M1Y",
+    "position": 1,
+    "aa": "Y",
+    "code": 19
+   },
+   {
+    "mutation": "P13H",
+    "position": 13,
+    "aa": "H",
+    "code": 246
+   },
+   {
+    "mutation": "N23K",
+    "position": 23,
+    "aa": "K",
+    "code": 448
+   },
+   {
+    "mutation": "K26L",
+    "position": 26,
+    "aa": "L",
+    "code": 509
+   },
+   {
+    "mutation": "V29K",
+    "position": 29,
+    "aa": "K",
+    "code": 568
+   },
+   {
+    "mutation": "Y39C",
+    "position": 39,
+    "aa": "C",
+    "code": 761
+   },
+   {
+    "mutation": "G40R",
+    "position": 40,
+    "aa": "R",
+    "code": 794
+   },
+   {
+    "mutation": "K45V",
+    "position": 45,
+    "aa": "V",
+    "code": 897
+   },
+   {
+    "mutation": "T49N",
+    "position": 49,
+    "aa": "N",
+    "code": 971
+   },
+   {
+    "mutation": "P58L",
+    "position": 58,
+    "aa": "L",
+    "code": 1149
+   },
+   {
+    "mutation": "V61L",
+    "position": 61,
+    "aa": "L",
+    "code": 1209
+   },
+   {
+    "mutation": "T62P",
+    "position": 62,
+    "aa": "P",
+    "code": 1232
+   },
+   {
+    "mutation": "F71L",
+    "position": 71,
+    "aa": "L",
+    "code": 1409
+   },
+   {
+    "mutation": "S72G",
+    "position": 72,
+    "aa": "G",
+    "code": 1425
+   },
+   {
+    "mutation": "P75T",
+    "position": 75,
+    "aa": "T",
+    "code": 1496
+   },
+   {
+    "mutation": "M78L",
+    "position": 78,
+    "aa": "L",
+    "code": 1549
+   },
+   {
+    "mutation": "K85G",
+    "position": 85,
+    "aa": "G",
+    "code": 1685
+   },
+   {
+    "mutation": "K85Q",
+    "position": 85,
+    "aa": "Q",
+    "code": 1693
+   },
+   {
+    "mutation": "K85R",
+    "position": 85,
+    "aa": "R",
+    "code": 1694
+   },
+   {
+    "mutation": "E90A",
+    "position": 90,
+    "aa": "A",
+    "code": 1780
+   },
+   {
+    "mutation": "Y92F",
+    "position": 92,
+    "aa": "F",
+    "code": 1824
+   },
+   {
+    "mutation": "F100P",
+    "position": 100,
+    "aa": "P",
+    "code": 1992
+   },
+   {
+    "mutation": "N121G",
+    "position": 121,
+    "aa": "G",
+    "code": 2405
+   },
+   {
+    "mutation": "K126T",
+    "position": 126,
+    "aa": "T",
+    "code": 2516
+   },
+   {
+    "mutation": "I128D",
+    "position": 128,
+    "aa": "D",
+    "code": 2542
+   },
+   {
+    "mutation": "E132R",
+    "position": 132,
+    "aa": "R",
+    "code": 2634
+   },
+   {
+    "mutation": "I136L",
+    "position": 136,
+    "aa": "L",
+    "code": 2709
+   },
+   {
+    "mutation": "H139L",
+    "position": 139,
+    "aa": "L",
+    "code": 2769
+   },
+   {
+    "mutation": "I152F",
+    "position": 152,
+    "aa": "F",
+    "code": 3024
+   },
+   {
+    "mutation": "A154P",
+    "position": 154,
+    "aa": "P",
+    "code": 3072
+   },
+   {
+    "mutation": "K156G",
+    "position": 156,
+    "aa": "G",
+    "code": 3105
+   },
+   {
+    "mutation": "N164Y",
+    "position": 164,
+    "aa": "Y",
+    "code": 3279
+   },
+   {
+    "mutation": "H169L",
+    "position": 169,
+    "aa": "L",
+    "code": 3369
+   },
+   {
+    "mutation": "Q177K",
+    "position": 177,
+    "aa": "K",
+    "code": 3528
+   },
+   {
+    "mutation": "Q183R",
+    "position": 183,
+    "aa": "R",
+    "code": 3654
+   },
+   {
+    "mutation": "I188Y",
+    "position": 188,
+    "aa": "Y",
+    "code": 3759
+   },
+   {
+    "mutation": "D190Y",
+    "position": 190,
+    "aa": "Y",
+    "code": 3799
+   },
+   {
+    "mutation": "D197A",
+    "position": 197,
+    "aa": "A",
+    "code": 3920
+   },
+   {
+    "mutation": "N198S",
+    "position": 198,
+    "aa": "S",
+    "code": 3955
+   },
+   {
+    "mutation": "K209G",
+    "position": 209,
+    "aa": "G",
+    "code": 4165
+   },
+   {
+    "mutation": "V219F",
+    "position": 219,
+    "aa": "F",
+    "code": 4364
+   },
+   {
+    "mutation": "E222R",
+    "position": 222,
+    "aa": "R",
+    "code": 4434
+   },
+   {
+    "mutation": "V224G",
+    "position": 224,
+    "aa": "G",
+    "code": 4465
+   },
+   {
+    "mutation": "G232D",
+    "position": 232,
+    "aa": "D",
+    "code": 4622
+   },
+   {
+    "mutation": "M233I",
+    "position": 233,
+    "aa": "I",
+    "code": 4647
+   },
+   {
+    "mutation": "E235L",
+    "position": 235,
+    "aa": "L",
+    "code": 4689
+   },
+   {
+    "mutation": "L236S",
+    "position": 236,
+    "aa": "S",
+    "code": 4715
+   },
+   {
+    "mutation": "K238A",
+    "position": 238,
+    "aa": "A",
+    "code": 4740
+   },
+   {
+    "mutation": "K238Y",
+    "position": 238,
+    "aa": "Y",
+    "code": 4759
+   }
+  ],
+  "variants": [
+   {
+    "index": 0,
+    "mutations": "",
+    "codes": [],
+    "brightness": 3.719,
+    "lowConfidence": false
+   },
+   {
+    "index": 1057,
+    "mutations": "G232V",
+    "codes": [
+     4637
+    ],
+    "brightness": 3.787,
+    "lowConfidence": true
+   },
+   {
+    "index": 2064,
+    "mutations": "V11A:Y182S",
+    "codes": [
+     200,
+     3635
+    ],
+    "brightness": 3.705,
+    "lowConfidence": true
+   },
+   {
+    "index": 4764,
+    "mutations": "F46S:H169L",
+    "codes": [
+     915,
+     3369
+    ],
+    "brightness": 3.404,
+    "lowConfidence": true
+   },
+   {
+    "index": 6350,
+    "mutations": "S72C:D155N",
+    "codes": [
+     1421,
+     3091
+    ],
+    "brightness": 3.912,
+    "lowConfidence": true
+   },
+   {
+    "index": 11299,
+    "mutations": "Y145C:V193A",
+    "codes": [
+     2881,
+     3840
+    ],
+    "brightness": 3.565,
+    "lowConfidence": true
+   },
+   {
+    "index": 13142,
+    "mutations": "L178P:H231R",
+    "codes": [
+     3552,
+     4614
+    ],
+    "brightness": 3.602,
+    "lowConfidence": true
+   },
+   {
+    "index": 15180,
+    "mutations": "V11A:E90G:K209R",
+    "codes": [
+     200,
+     1785,
+     4174
+    ],
+    "brightness": 3.593,
+    "lowConfidence": true
+   },
+   {
+    "index": 19749,
+    "mutations": "K52R:K126T:I167T",
+    "codes": [
+     1034,
+     2516,
+     3336
+    ],
+    "brightness": 3.642,
+    "lowConfidence": true
+   },
+   {
+    "index": 20807,
+    "mutations": "F71I:K107R:I128T",
+    "codes": [
+     1407,
+     2134,
+     2556
+    ],
+    "brightness": 3.6,
+    "lowConfidence": true
+   },
+   {
+    "index": 23014,
+    "mutations": "K101E:N121S:F223I",
+    "codes": [
+     2003,
+     2415,
+     4447
+    ],
+    "brightness": 3.539,
+    "lowConfidence": true
+   },
+   {
+    "index": 23405,
+    "mutations": "K107M:K131R:F223L",
+    "codes": [
+     2130,
+     2614,
+     4449
+    ],
+    "brightness": 3.592,
+    "lowConfidence": true
+   },
+   {
+    "index": 24673,
+    "mutations": "D133G:E142G:K158E",
+    "codes": [
+     2645,
+     2825,
+     3143
+    ],
+    "brightness": 3.67,
+    "lowConfidence": true
+   },
+   {
+    "index": 24842,
+    "mutations": "I136V:I152V:K166E",
+    "codes": [
+     2717,
+     3037,
+     3303
+    ],
+    "brightness": 3.641,
+    "lowConfidence": true
+   },
+   {
+    "index": 29457,
+    "mutations": "S28G:H181R:K209E:V224M",
+    "codes": [
+     545,
+     3614,
+     4163,
+     4470
+    ],
+    "brightness": 1.302,
+    "lowConfidence": true
+   },
+   {
+    "index": 34729,
+    "mutations": "N121Y:I161F:E172G:S175G",
+    "codes": [
+     2419,
+     3204,
+     3425,
+     3485
+    ],
+    "brightness": 1.302,
+    "lowConfidence": true
+   },
+   {
+    "index": 38220,
+    "mutations": "F27L:V29A:F46L:Y74C:K113R",
+    "codes": [
+     529,
+     560,
+     909,
+     1461,
+     2254
+    ],
+    "brightness": 1.301,
+    "lowConfidence": true
+   },
+   {
+    "index": 38261,
+    "mutations": "F27L:S86P:Y151F:K166R:M218K",
+    "codes": [
+     529,
+     1712,
+     3004,
+     3314,
+     4348
+    ],
+    "brightness": 1.301,
+    "lowConfidence": true
+   },
+   {
+    "index": 41003,
+    "mutations": "S72G:M153I:F165I:L195M:D234G",
+    "codes": [
+     1425,
+     3047,
+     3287,
+     3890,
+     4665
+    ],
+    "brightness": 3.434,
+    "lowConfidence": true
+   },
+   {
+    "index": 43971,
+    "mutations": "D21G:Y92C:V112E:S147G:M153V:N212Y",
+    "codes": [
+     405,
+     1821,
+     2223,
+     2925,
+     3057,
+     4239
+    ],
+    "brightness": 1.301,
+    "lowConfidence": true
+   },
+   {
+    "index": 50092,
+    "mutations": "E32K:T49A:F83S:E90V:V150A:N159S:S175N:L207P",
+    "codes": [
+     628,
+     960,
+     1655,
+     1797,
+     2980,
+     3175,
+     3491,
+     4132
+    ],
+    "brightness": 1.301,
+    "lowConfidence": true
+   }
+  ]
+ }
+}

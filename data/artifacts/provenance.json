@@ -1,0 +1,125 @@
+{
+ "pipelineVersion": "1.0.0",
+ "primarySource": "Sarkisyan et al. 2016, Local fitness landscape of the green fluorescent protein, Nature 533:397-401, doi:10.1038/nature17995",
+ "positionOffset": 2,
+ "positionNumbering": "avGFP / UniProt P42212, 1-based, initiator Met = 1",
+ "construct": "P42212 with F64L (translated from the figshare reference DNA; asserted by the pipeline)",
+ "brightnessScale": "log10 median brightness; > 2.5 is visibly fluorescent",
+ "aaOrder": "ACDEFGHIKLMNPQRSTVWY",
+ "models": {
+  "esm": {
+   "label": "ESM-2",
+   "model": "facebook/esm2_t12_35M_UR50D",
+   "method": "masked-marginal",
+   "spearman": 0.1313
+  },
+  "profile": {
+   "label": "Evolutionary profile",
+   "model": "site-independent profile of ProteinGym's GFP_AEQVI MSA",
+   "method": "weighted frequencies, theta 0.2, pseudocount 1.0",
+   "spearman": 0.6636,
+   "msa": {
+    "sequences": 396,
+    "sequencesUsed": 396,
+    "effectiveSequences": 14.29,
+    "coveredPositions": [
+     2,
+     233
+    ],
+    "theta": 0.2,
+    "pseudocount": 1.0
+   }
+  }
+ },
+ "crosscheck": {
+  "against": "ProteinGym GFP_AEQVI_Sarkisyan_2016",
+  "spearman": 0.999873,
+  "overlap": 51714,
+  "proteingymCoveredByLocal": 1.0,
+  "summaryStatisticReconciled": true
+ },
+ "esmArgmaxAgreement": 0.9916,
+ "sources": {
+  "sarkisyan_aa_genotypes": {
+   "retrieved_at": "2026-11-02T23:28:36+00:00",
+   "url": "https://ndownloader.figshare.com/files/4820647",
+   "filename": "amino_acid_genotypes_to_brightness.tsv",
+   "md5": "bfff10393b2bedd687738885de79d76d",
+   "sha256": "5581230b9888f9960708a4769ce1c9b4453561f0b5f0374525445b4a984d54d5",
+   "citation": "Sarkisyan et al. 2016, Nature 533:397-401, doi:10.1038/nature17995; figshare doi:10.6084/m9.figshare.3102154.v1",
+   "license": "CC BY 4.0"
+  },
+  "sarkisyan_reference_dna": {
+   "retrieved_at": "2026-11-02T23:28:36+00:00",
+   "url": "https://ndownloader.figshare.com/files/4820653",
+   "filename": "avGFP_reference_sequence.fa",
+   "md5": "c1af632d736837b1d1518cb9aae53859",
+   "sha256": "2559ee1afe9d0f41e03ea75db96448a34178c2dd597c78e08f01b1ee4ab5e248",
+   "citation": "Sarkisyan et al. 2016; figshare doi:10.6084/m9.figshare.3102154.v1",
+   "license": "CC BY 4.0"
+  },
+  "uniprot_p42212": {
+   "retrieved_at": "2026-11-02T23:28:37+00:00",
+   "url": "https://rest.uniprot.org/uniprotkb/P42212.fasta",
+   "filename": "P42212.fasta",
+   "md5": "05e6dad3623bc589dd18ed9746b3a075",
+   "sha256": "f2d3db12225dafa41aefacb1cd5280f9b7ab7a62784054a4f82278593b1ee124",
+   "citation": "UniProt Consortium, UniProtKB P42212 (GFP_AEQVI)",
+   "license": "CC BY 4.0"
+  },
+  "alphafold_p42212": {
+   "retrieved_at": "2026-11-02T23:28:37+00:00",
+   "url": "https://alphafold.ebi.ac.uk/files/AF-P42212-F1-model_v6.pdb",
+   "filename": "AF-P42212-F1-model_v6.pdb",
+   "md5": "31b6a0993ae09e3787f67cb46a0add28",
+   "sha256": "abfe2191b8474977143b60b866077b97526fa71c9d3c657304b348e21397323f",
+   "citation": "AlphaFold DB (Jumper et al. 2021; Varadi et al. 2024), AF-P42212-F1 v6",
+   "license": "CC BY 4.0"
+  },
+  "proteingym_gfp": {
+   "retrieved_at": "2026-11-02T23:28:37+00:00",
+   "url": "https://huggingface.co/datasets/OATML-Markslab/ProteinGym/resolve/main/ProteinGym_substitutions/GFP_AEQVI_Sarkisyan_2016.csv",
+   "filename": "GFP_AEQVI_Sarkisyan_2016.csv",
+   "md5": "7aa24d0ea46774a29bd00f5b3a64e8ae",
+   "sha256": "dcfe5eb754186eb9eb3a2fe7889d83d791640963a4512b55e91e3c3d4ac65eb2",
+   "citation": "Notin et al. 2023, ProteinGym, NeurIPS Datasets and Benchmarks",
+   "license": "MIT"
+  },
+  "sarkisyan_nt_genotypes": {
+   "retrieved_at": "2026-11-02T23:30:36+00:00",
+   "url": "https://ndownloader.figshare.com/files/4820650",
+   "filename": "nucleotide_genotypes_to_brightness.tsv",
+   "md5": "a88421beea91b707174b9a76c359c3eb",
+   "sha256": "d9c271c9706cefd04d790a1d30158602cac273ddc10c698d292ab01407798240",
+   "citation": "Sarkisyan et al. 2016; figshare doi:10.6084/m9.figshare.3102154.v1",
+   "license": "CC BY 4.0"
+  },
+  "proteingym_gfp_msa": {
+   "retrieved_at": "unknown",
+   "url": "https://zenodo.org/api/records/15293562/files/DMS_msa_files.zip/content",
+   "member": "DMS_msa_files/GFP_AEQVI_full_04-29-2022_b08.a2m",
+   "filename": "GFP_AEQVI_full_04-29-2022_b08.a2m",
+   "md5": "52e7f1bfdad73db4ebd0c3c34a7ada56",
+   "sha256": "caf7b7da575b832f5829deac1ceee69ea0098b3660d8eea0c49b01405bb9b8f8",
+   "citation": "Notin et al. 2023, ProteinGym v1.3 MSA for GFP_AEQVI (Zenodo 10.5281/zenodo.15293562)",
+   "license": "MIT"
+  },
+  "proteingym_zero_shot_spearman": {
+   "retrieved_at": "2026-11-02T23:40:04+00:00",
+   "url": "https://raw.githubusercontent.com/OATML-Markslab/ProteinGym/main/benchmarks/DMS_zero_shot/substitutions/Spearman/DMS_substitutions_Spearman_DMS_level.csv",
+   "filename": "DMS_substitutions_Spearman_DMS_level.csv",
+   "md5": "393c7451dd6bf2e0e63f62afd91901c7",
+   "sha256": "f432423b87f79ac9778dfac86e3d95be041d246bc618dc0a406b35b0b7466437",
+   "citation": "Notin et al. 2023, ProteinGym zero-shot substitution benchmark (per-assay Spearman)",
+   "license": "MIT"
+  }
+ },
+ "artifacts": {
+  "AF-P42212-F1-model_v6.pdb": "abfe2191b8474977143b60b866077b97526fa71c9d3c657304b348e21397323f",
+  "esm-matrix.bin": "f28853a6c399e624059744b97ad9134a25e60af6c2aeeed1753cb101d9d06e77",
+  "profile-matrix.bin": "cade2a9ed3a2c239382a86900678e97cfbf82b15c94143aa849e901a46c61315",
+  "reference.json": "17068d9eb6e3928edfb0e7871d6639a186885893dff51c73d8c57f9c29c92eef",
+  "variants.bin": "73c06c7e2c0cfb8b1a0c805b4e5912d2f3818bea63c327f1e76962b5b7ca03d5",
+  "variants.idx.json": "68a74dbdf718bbdd02c993a84a891f3715891b19884a69a788a0bbc95194115a"
+ }
+}
