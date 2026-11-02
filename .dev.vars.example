@@ -1,0 +1,3 @@
+# Copy to .dev.vars for `wrangler dev`. These are Cloudflare's documented always-pass test values.
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+SESSION_SIGNING_KEY=dev-only-signing-key-change-me

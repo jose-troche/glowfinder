@@ -1,0 +1,41 @@
+name = "glowfinder"
+main = "worker/index.ts"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets: the built frontend plus the pipeline artifacts (vite build -> public/).
+# Requests that match a file never reach the Worker; only /api/* runs code.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[ai]
+binding = "AI"
+remote = true
+
+[[ratelimits]]
+name = "LLM_LIMITER"
+namespace_id = "2001"
+  [ratelimits.simple]
+  limit = 12
+  period = 60
+
+[[durable_objects.bindings]]
+name = "NEURON_COUNTER"
+class_name = "NeuronCounter"
+
+# SQLite-backed Durable Objects are required on the Workers Free plan.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["NeuronCounter"]
+
+[vars]
+AI_MODEL = "@cf/meta/llama-3.2-3b-instruct"
+NEURON_DAILY_BUDGET = "8000"
+# Public Turnstile site key. This is Cloudflare's always-pass TEST key; replace it with a real
+# widget's site key before deploying (and set the matching TURNSTILE_SECRET_KEY secret).
+TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
+
+# Secrets (wrangler secret put ...): TURNSTILE_SECRET_KEY, SESSION_SIGNING_KEY.
+# Without them the live LLM endpoints answer 503 and the app plays the recorded exemplar.
