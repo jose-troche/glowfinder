@@ -129,7 +129,7 @@ test.describe("the LLM strategy", () => {
     await expect(page.locator("#llm-mode")).toBeHidden();
   });
 
-  test("plays the recorded run for free, fallbacks flagged", async ({ page }) => {
+  test("plays the recorded run for free, fallbacks matching the recording", async ({ page }) => {
     await noWorker(page);
     await page.goto(race("seed=recorded"));
     await page.getByLabel(/^LLM/).check();
@@ -139,7 +139,8 @@ test.describe("the LLM strategy", () => {
     await expect(page.locator("#scoreboard tr")).toHaveCount(5);
     await expect(page.locator("#reasoning-source")).toContainText("Pre-recorded run");
     await expect(page.locator("#reasoning .reasoning")).toHaveCount(10);
-    await expect(page.locator("#reasoning .reasoning.is-fallback")).toHaveCount(4);
+    // the recording (JSON mode) had no unusable replies; any fallback here would be a replay bug
+    await expect(page.locator("#reasoning .reasoning.is-fallback")).toHaveCount(0);
     await expect(page.locator("#lesson")).toContainText("Why confident reasoning didn't translate");
   });
 

@@ -3,7 +3,7 @@
 // LLM strategy costs anything.
 
 import { Hono } from "hono";
-import { MAX_OUTPUT_TOKENS } from "./ai/prompts.ts";
+import { MAX_OUTPUT_TOKENS, type moveResponseFormat } from "./ai/prompts.ts";
 import { counter, NeuronCounter } from "./budget/NeuronCounter.ts";
 import { ApiError, ERROR_STATUS, llmConfigured, type Env } from "./env.ts";
 import { verifyTurnstile } from "./middleware/turnstile.ts";
@@ -12,22 +12,29 @@ import { sessionRoutes } from "./routes/session.ts";
 
 export interface ModelResult {
   response?: unknown;
-  usage?: { prompt_tokens?: number; completion_tokens?: number };
+  /** `neurons` is Workers AI's own count; the token fields are the fallback for estimating it */
+  usage?: { prompt_tokens?: number; completion_tokens?: number; neurons?: number };
 }
 
 /** Seams for tests: the outside world the Worker talks to. */
 export interface Deps {
   verifyTurnstile: (token: string, secret: string, ip: string | undefined, hostnames: string[]) => Promise<boolean>;
-  runModel: (env: Env, model: string, messages: { role: "system" | "user"; content: string }[]) => Promise<ModelResult>;
+  runModel: (
+    env: Env,
+    model: string,
+    messages: { role: "system" | "user"; content: string }[],
+    responseFormat: ReturnType<typeof moveResponseFormat>,
+  ) => Promise<ModelResult>;
 }
 
 export const defaultDeps: Deps = {
   verifyTurnstile: (token, secret, ip, hostnames) => verifyTurnstile(token, secret, ip, hostnames),
-  runModel: async (env, model, messages) =>
+  runModel: async (env, model, messages, responseFormat) =>
     (await env.AI.run(model as keyof AiModels, {
       messages,
       max_tokens: MAX_OUTPUT_TOKENS,
       temperature: 0.4,
+      response_format: responseFormat,
     } as never)) as ModelResult,
 };
 

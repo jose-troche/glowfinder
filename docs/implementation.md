@@ -297,6 +297,8 @@ Return JSON: { "picks": [int], "reasoning": "two sentences" }
 
 Parse the response defensively. Small models return malformed JSON regularly. On a parse failure, fall back to random picks and flag the round in the UI as a fallback — honest, and it's a real finding about the strategy.
 
+As built, the Worker also uses Workers AI's JSON mode (`response_format` with a JSON schema whose `picks` array has exactly *N* integers in range). The first recorded run, without it, had 4 of 10 rounds fall back; with it, a re-recorded run had none. The defensive parse and the fallback stay.
+
 Cap `reasoning` length server-side before returning it.
 
 ### 4.5 Exemplar run
@@ -452,8 +454,8 @@ This is the repo that will get read most carefully, so the README carries real w
 
 Manual, from a developer machine. There is no CI.
 
-1. Run the tests (`npm test`, `npm run test:e2e`).
-2. `npm run deploy` builds the app and runs `wrangler deploy`. The live URL is `https://glowfinder.troche.workers.dev`.
+1. After UI changes, run `npm run test:e2e`.
+2. `npm run deploy` runs the unit and Worker tests (a failure stops it), builds the app and runs `wrangler deploy`. The live URL is `https://glowfinder.troche.workers.dev`.
 
 One-time setup, already done:
 

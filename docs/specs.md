@@ -20,7 +20,7 @@ Several strategies each get an identical budget of guesses. Round after round, e
 | Conservative | Substitution chemistry only (BLOSUM62) | Slightly better than random. 3.941 / 2.3 |
 | Protein language model | ESM-2 35M masked-marginal log-probabilities; has read millions of sequences, never this experiment | Worse than random on GFP. 3.843 / 8.0 |
 | Evolution | A site-independent profile of GFP's natural relatives (ProteinGym's MSA) | Climbs steadily and never goes dark. **3.964 / 0.0** |
-| LLM reasoning | Workers AI (`llama-3.2-3b-instruct`) reasoning about structure and chemistry | Plausible arguments, mixed results. 3.880 / 6 in the one recorded run, with 4 of 10 replies unparseable |
+| LLM reasoning | Workers AI (`llama-3.2-3b-instruct`) reasoning about structure and chemistry | Plausible arguments, mixed results. 3.922 / 8 in the one recorded run |
 
 The plan assumed the protein language model would win. The M3 bake-off (§5, Stage 3b) showed it doesn't on GFP: ESM-2's score barely correlates with brightness (ρ = 0.13 overall, ≈ 0.05 within a mutation depth), matching ProteinGym's published numbers. GFP has few relatives in UniRef, so a single-sequence model has little to go on. The evolutionary profile, which is just as zero-shot and precomputed, was added as a fifth strategy. ESM-2 stays in and is reported as measured.
 
@@ -280,6 +280,8 @@ Seeded RNG, seed shown in the UI and included in shareable URLs. A reader must b
 ### LLM cost per run
 
 An LLM strategy run of 10 rounds is 10 calls. At roughly 1,500 input and 400 output tokens per call on `@cf/meta/llama-3.2-3b-instruct` (4,625 neurons per million input tokens, 30,475 per million output), that's about **19 neurons per call, ~190 per full run** — roughly **50 full LLM runs per day** inside the free allocation.
+
+**Measured:** prompts come to about 700–1,100 input tokens and replies to about 80 output tokens, so a call costs about **7 neurons and a run about 70**. Workers AI reports the exact figure in `usage.neurons`, and the circuit breaker bills that. At the 8,000 budget that is roughly 110 live runs per day.
 
 Mitigations:
 

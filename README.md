@@ -16,7 +16,7 @@ grading another model.
 | Conservative | Substitution chemistry (BLOSUM62) | 3.941 / 2.3 |
 | ESM-2 35M | Protein language model, never saw this experiment | 3.843 / 8.0 |
 | **Evolution** | Which residues ~400 natural GFP relatives carry | **3.964 / 0.0** |
-| LLM (llama-3.2-3b) | General reasoning about structure and chemistry | 3.880 / 6 (one recorded run, 4 of 10 replies unparseable) |
+| LLM (llama-3.2-3b) | General reasoning about structure and chemistry | 3.922 / 8 (one recorded run; JSON mode, all 10 replies usable) |
 
 Wild type is 3.719. Numbers come from `node scripts/bakeoff.ts` and the committed recording.
 
@@ -120,7 +120,7 @@ anyone can reproduce a race exactly.
 | Resource | Free limit | Usage |
 |---|---|---|
 | Worker requests | 100,000/day | Static assets are served without invoking the Worker; only `/api/*` runs code |
-| Workers AI | 10,000 neurons/day | LLM only, about 19 neurons per round and about 190 per run. The circuit breaker stops at `NEURON_DAILY_BUDGET` (8,000) |
+| Workers AI | 10,000 neurons/day | LLM only, about 7 neurons per round and about 70 per run, as measured by Workers AI (the plan estimated 19 and 190). The circuit breaker stops at `NEURON_DAILY_BUDGET` (8,000), about 110 live runs |
 | Durable Objects | SQLite-backed (Free plan) | One counter object |
 | KV | — | Not used |
 
@@ -138,7 +138,7 @@ npm run build && npx wrangler dev   # app + Worker on :8787 (copy .dev.vars.exam
 Tests:
 
 ```sh
-npm test                        # 113 unit tests + 50 Worker tests (in workerd)
+npm test                        # 113 unit tests + 52 Worker tests (in workerd)
 npx playwright install chromium && npm run test:e2e   # 25 UI tests, desktop and mobile
 cd pipeline && uv sync && uv run pytest               # 60 pipeline tests (incl. ESM-2 8M)
 ```
@@ -151,11 +151,14 @@ Re-run the pipeline with `cd pipeline && uv run glowfinder-pipeline`, and re-rec
 
 ## Deploy
 
-Deploys are manual; there is no CI. Run the tests, then:
+Deploys are manual; there is no CI.
 
 ```sh
-npm run deploy                  # build + wrangler deploy → https://glowfinder.troche.workers.dev
+npm run test:e2e                # UI tests (not part of deploy; run them after UI changes)
+npm run deploy                  # unit + Worker tests, build, wrangler deploy → https://glowfinder.troche.workers.dev
 ```
+
+A failing unit or Worker test stops the deploy.
 
 One-time setup, already done for this deployment:
 

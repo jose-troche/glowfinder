@@ -97,6 +97,22 @@ describe("POST /api/llm-move", () => {
     expect(h.runModel).toHaveBeenCalledTimes(1);
   });
 
+  it("constrains the model with a JSON schema sized to the request", async () => {
+    const h = harness();
+    await h.call("/api/llm-move", move(await h.session(), { candidates: [[41], [300], [2181], [4000]], n: 2 }));
+    const format = h.runModel.mock.calls[0]![3];
+    expect(format.type).toBe("json_schema");
+    expect(format.json_schema.required).toEqual(["reasoning", "picks"]);
+    expect(format.json_schema.properties.picks).toMatchObject({ minItems: 2, maxItems: 2, items: { minimum: 0, maximum: 3 } });
+  });
+
+  it("bills the neurons Workers AI reports when it reports them", async () => {
+    const h = harness({ response: { picks: [0], reasoning: "r" }, usage: { prompt_tokens: 900, completion_tokens: 80, neurons: 6.3184 } });
+    const r = await h.call("/api/llm-move", move(await h.session(), { n: 1 }));
+    expect(r.json.neuronsEstimated).toBe(6.32);
+    expect(r.json.fallback).toBeUndefined();
+  });
+
   it("one Turnstile session covers a whole run", async () => {
     const h = harness();
     const token = await h.session();

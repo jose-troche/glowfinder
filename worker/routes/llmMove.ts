@@ -4,6 +4,7 @@ import {
   buildPrompt,
   estimateNeurons,
   MAX_OUTPUT_TOKENS,
+  moveResponseFormat,
   parseModelResponse,
   SYSTEM_PROMPT,
   type MoveInput,
@@ -114,12 +115,21 @@ export function llmMoveRoutes(deps: Deps) {
         throw new ApiError("AI_BUDGET_EXHAUSTED", "Today's live LLM budget is spent; showing the recorded run instead.");
       }
 
-      const result = await deps.runModel(c.env, model, [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: prompt },
-      ]);
+      const result = await deps.runModel(
+        c.env,
+        model,
+        [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: prompt },
+        ],
+        moveResponseFormat(input.candidates.length, input.n),
+      );
       const outputTokens = result.usage?.completion_tokens ?? approxTokens(typeof result.response === "string" ? result.response : JSON.stringify(result.response ?? ""));
-      const actual = estimateNeurons(model, result.usage?.prompt_tokens ?? inputTokens, outputTokens);
+      const reported = result.usage?.neurons;
+      const actual =
+        typeof reported === "number" && Number.isFinite(reported) && reported >= 0
+          ? Math.round(reported * 100) / 100
+          : estimateNeurons(model, result.usage?.prompt_tokens ?? inputTokens, outputTokens);
       c.executionCtx.waitUntil(neurons.adjust(actual - reserved));
 
       const parsed = parseModelResponse(result.response, input.candidates.length, input.n);

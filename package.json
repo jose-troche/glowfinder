@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.json --noEmit && tsc -p worker/tsconfig.json --noEmit && vite build",
     "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "npm test && npm run build && wrangler deploy",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p worker/tsconfig.json --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
