@@ -8,7 +8,7 @@ grading another model.
 
 ![A seeded race: five strategies, best brightness so far, dark-variant counters](docs/media/race.gif)
 
-**Live:** not deployed yet. See [Deploy](#deploy).
+**Live:** https://glowfinder.troche.workers.dev
 
 | Strategy | What it knows | Default race, 20 seeds: best (log₁₀) / dark proposals of 50 |
 |---|---|---|
@@ -138,7 +138,7 @@ npm run build && npx wrangler dev   # app + Worker on :8787 (copy .dev.vars.exam
 Tests:
 
 ```sh
-npm test                        # 113 unit tests + 48 Worker tests (in workerd)
+npm test                        # 113 unit tests + 50 Worker tests (in workerd)
 npx playwright install chromium && npm run test:e2e   # 25 UI tests, desktop and mobile
 cd pipeline && uv sync && uv run pytest               # 60 pipeline tests (incl. ESM-2 8M)
 ```
@@ -151,12 +151,26 @@ Re-run the pipeline with `cd pipeline && uv run glowfinder-pipeline`, and re-rec
 
 ## Deploy
 
-1. Create a Turnstile widget and put its **site key** in `TURNSTILE_SITE_KEY` in `wrangler.toml`. The
-   committed value is Cloudflare's always-pass test key.
-2. `npx wrangler secret put TURNSTILE_SECRET_KEY` and `npx wrangler secret put SESSION_SIGNING_KEY`.
-   Without these, `/api/session` and `/api/llm-move` answer `LLM_UNAVAILABLE` and the app plays the
-   recorded run.
-3. `npm run deploy`.
+Deploys are manual; there is no CI. Run the tests, then:
+
+```sh
+npm run deploy                  # build + wrangler deploy → https://glowfinder.troche.workers.dev
+```
+
+One-time setup, already done for this deployment:
+
+1. A managed Turnstile widget (`npx wrangler turnstile widget create glowfinder --domain
+   glowfinder.troche.workers.dev --domain localhost --domain 127.0.0.1 --mode managed`). Its public
+   site key is `TURNSTILE_SITE_KEY` in `wrangler.toml`.
+2. Two Worker secrets: `TURNSTILE_SECRET_KEY` (the widget's secret) and `SESSION_SIGNING_KEY` (random,
+   e.g. `openssl rand -base64 32`), set with `npx wrangler secret put`. Without them,
+   `/api/session` and `/api/llm-move` answer `LLM_UNAVAILABLE` and the app plays the recorded run.
+   Secrets survive redeploys.
+
+The Worker accepts a Turnstile token only if siteverify reports the `llm_session` action and a
+hostname listed in `TURNSTILE_HOSTNAMES`. To deploy under another hostname, add it to the widget
+(`wrangler turnstile widget update`) and to that variable. Local development uses the test keys in
+`.dev.vars` (copied from `.dev.vars.example`).
 
 ## Data and license
 

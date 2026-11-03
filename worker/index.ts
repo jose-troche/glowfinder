@@ -17,12 +17,12 @@ export interface ModelResult {
 
 /** Seams for tests: the outside world the Worker talks to. */
 export interface Deps {
-  verifyTurnstile: (token: string, secret: string, ip: string | undefined) => Promise<boolean>;
+  verifyTurnstile: (token: string, secret: string, ip: string | undefined, hostnames: string[]) => Promise<boolean>;
   runModel: (env: Env, model: string, messages: { role: "system" | "user"; content: string }[]) => Promise<ModelResult>;
 }
 
 export const defaultDeps: Deps = {
-  verifyTurnstile: (token, secret, ip) => verifyTurnstile(token, secret, ip),
+  verifyTurnstile: (token, secret, ip, hostnames) => verifyTurnstile(token, secret, ip, hostnames),
   runModel: async (env, model, messages) =>
     (await env.AI.run(model as keyof AiModels, {
       messages,

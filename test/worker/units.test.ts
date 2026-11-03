@@ -6,7 +6,7 @@ import {
   estimateNeurons,
   parseModelResponse,
 } from "../../worker/ai/prompts.ts";
-import { signSession, verifySession, verifyTurnstile, SITEVERIFY_URL } from "../../worker/middleware/turnstile.ts";
+import { parseHostnames, signSession, verifySession, verifyTurnstile, SITEVERIFY_URL, TURNSTILE_ACTION } from "../../worker/middleware/turnstile.ts";
 import { validateMoveBody } from "../../worker/routes/llmMove.ts";
 
 const code = (position: number, aa: string) => (position - 1) * 20 + "ACDEFGHIKLMNPQRSTVWY".indexOf(aa);
@@ -79,22 +79,42 @@ describe("session tokens", () => {
 });
 
 describe("verifyTurnstile", () => {
+  const hosts = ["glowfinder.example.dev"];
+  const reply = (data: Record<string, unknown>) => vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => Response.json(data));
+  const good = { success: true, action: TURNSTILE_ACTION, hostname: "glowfinder.example.dev" };
+
   it("posts secret, token and ip to siteverify", async () => {
-    const fetchImpl = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => Response.json({ success: true }));
-    expect(await verifyTurnstile("tok", "sec", "1.2.3.4", fetchImpl as typeof fetch)).toBe(true);
+    const fetchImpl = reply(good);
+    expect(await verifyTurnstile("tok", "sec", "1.2.3.4", hosts, fetchImpl as typeof fetch)).toBe(true);
     const [url, init] = fetchImpl.mock.calls[0]!;
     expect(url).toBe(SITEVERIFY_URL);
     const body = init!.body as FormData;
     expect([body.get("secret"), body.get("response"), body.get("remoteip")]).toEqual(["sec", "tok", "1.2.3.4"]);
   });
 
+  it("requires our action and an allowlisted hostname", async () => {
+    const check = (data: Record<string, unknown>, h = hosts) => verifyTurnstile("t", "s", undefined, h, reply(data) as unknown as typeof fetch);
+    expect(await check({ ...good, action: "login" })).toBe(false);
+    expect(await check({ ...good, action: undefined })).toBe(false);
+    expect(await check({ ...good, hostname: "evil.example" })).toBe(false);
+    expect(await check({ ...good, hostname: undefined })).toBe(false);
+    expect(await check(good, [])).toBe(false);
+    // Cloudflare's test keys report no action; accepted only when flagged as a testing-key result
+    expect(await check({ success: true, hostname: "example.com", metadata: { result_with_testing_key: true } }, ["example.com"])).toBe(true);
+  });
+
+  it("parses the hostname allowlist", () => {
+    expect(parseHostnames(" a.dev, b.dev ,,")).toEqual(["a.dev", "b.dev"]);
+    expect(parseHostnames(undefined)).toEqual([]);
+  });
+
   it("fails closed", async () => {
-    const no = vi.fn(async () => Response.json({ success: false }));
+    const no = vi.fn(async () => Response.json({ ...good, success: false }));
     const down = vi.fn(async () => new Response("bad gateway", { status: 502 }));
     const throws = vi.fn(async () => {
       throw new Error("network");
     });
-    for (const f of [no, down, throws]) expect(await verifyTurnstile("t", "s", undefined, f as unknown as typeof fetch)).toBe(false);
+    for (const f of [no, down, throws]) expect(await verifyTurnstile("t", "s", undefined, hosts, f as unknown as typeof fetch)).toBe(false);
   });
 });
 

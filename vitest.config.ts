@@ -21,6 +21,7 @@ export default defineConfig({
               bindings: {
                 TURNSTILE_SECRET_KEY: "test-secret",
                 SESSION_SIGNING_KEY: "test-signing-key",
+                TURNSTILE_HOSTNAMES: "app.test, www.app.test",
                 NEURON_DAILY_BUDGET: "100",
               },
             },

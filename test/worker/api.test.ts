@@ -68,7 +68,7 @@ describe("POST /api/session (Turnstile)", () => {
     const r = await call("/api/session", { turnstileToken: "bad-token" });
     expect(r.status).toBe(403);
     expect(r.json.error.code).toBe("TURNSTILE_FAILED");
-    expect(verifyTurnstile).toHaveBeenCalledWith("bad-token", "test-secret", expect.stringMatching(/^203\.0\.113\./));
+    expect(verifyTurnstile).toHaveBeenCalledWith("bad-token", "test-secret", expect.stringMatching(/^203\.0\.113\./), ["app.test", "www.app.test"]);
     expect(runModel).not.toHaveBeenCalled();
   });
 

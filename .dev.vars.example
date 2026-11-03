@@ -1,3 +1,7 @@
-# Copy to .dev.vars for `wrangler dev`. These are Cloudflare's documented always-pass test values.
+# Copy to .dev.vars for `wrangler dev`. These are Cloudflare's documented always-pass test values;
+# they override the production site key and hostname allowlist in wrangler.toml.
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 SESSION_SIGNING_KEY=dev-only-signing-key-change-me
+# The test secret reports hostname "example.com".
+TURNSTILE_HOSTNAMES=example.com

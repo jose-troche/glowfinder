@@ -62,6 +62,7 @@ export async function solveTurnstile(siteKey: string, container: HTMLElement): P
   return new Promise((resolve, reject) => {
     const id = window.turnstile!.render(container, {
       sitekey: siteKey,
+      action: "llm_session", // checked by the Worker (worker/middleware/turnstile.ts)
       theme: "dark",
       callback: (token: string) => {
         window.turnstile!.remove(id);

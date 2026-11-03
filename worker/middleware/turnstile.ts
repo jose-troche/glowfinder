@@ -6,22 +6,46 @@ import { ApiError, type Env } from "../env.ts";
 
 export const SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 export const SESSION_TTL_MS = 30 * 60 * 1000;
+/** Must match the `action` the browser renders the widget with (src/ui/llmSession.ts). */
+export const TURNSTILE_ACTION = "llm_session";
 
+/** TURNSTILE_HOSTNAMES is a comma-separated allowlist of frontend hostnames. */
+export function parseHostnames(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((h) => h.trim())
+    .filter(Boolean);
+}
+
+interface SiteverifyResult {
+  success?: boolean;
+  action?: string;
+  hostname?: string;
+  metadata?: { result_with_testing_key?: boolean };
+}
+
+/**
+ * Fails closed: requires success, our action and an allowlisted hostname. Cloudflare's test
+ * keys report no action, so a missing action is accepted only on a testing-key result.
+ */
 export async function verifyTurnstile(
   token: string,
   secret: string,
   ip: string | undefined,
+  hostnames: string[],
   fetchImpl: typeof fetch = fetch,
 ): Promise<boolean> {
+  if (hostnames.length === 0) return false;
   const body = new FormData();
   body.append("secret", secret);
   body.append("response", token);
   if (ip) body.append("remoteip", ip);
   try {
-    const res = await fetchImpl(SITEVERIFY_URL, { method: "POST", body });
+    const res = await fetchImpl(SITEVERIFY_URL, { method: "POST", body, signal: AbortSignal.timeout(10_000) });
     if (!res.ok) return false;
-    const data = (await res.json()) as { success?: boolean };
-    return data.success === true;
+    const data = (await res.json()) as SiteverifyResult;
+    const actionOk = data.action === TURNSTILE_ACTION || (data.action === undefined && data.metadata?.result_with_testing_key === true);
+    return data.success === true && actionOk && typeof data.hostname === "string" && hostnames.includes(data.hostname);
   } catch {
     return false;
   }

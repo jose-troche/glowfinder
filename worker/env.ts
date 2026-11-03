@@ -9,6 +9,7 @@ export interface Env {
   AI_MODEL: string;
   NEURON_DAILY_BUDGET: string;
   TURNSTILE_SITE_KEY: string;
+  TURNSTILE_HOSTNAMES: string;
 
   // secrets; absent means the live LLM path is switched off
   TURNSTILE_SECRET_KEY?: string;

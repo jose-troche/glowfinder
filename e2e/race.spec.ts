@@ -163,7 +163,7 @@ test.describe("the LLM strategy", () => {
       await page.route("**/turnstile/v0/api.js*", (route) =>
         route.fulfill({
           contentType: "text/javascript",
-          body: "window.turnstile={render:(el,o)=>{setTimeout(()=>o.callback('stub-token'),10);return 'w1'},remove:()=>{}};",
+          body: "window.turnstile={render:(el,o)=>{window.__turnstileAction=o.action;setTimeout(()=>o.callback('stub-token'),10);return 'w1'},remove:()=>{}};",
         }),
       );
       await page.route("**/api/config", (route) =>
@@ -192,6 +192,8 @@ test.describe("the LLM strategy", () => {
       await runRace(page);
 
       expect(captured.sessions).toBe(1);
+      // the Worker rejects siteverify results for any other action
+      expect(await page.evaluate(() => (window as unknown as { __turnstileAction?: string }).__turnstileAction)).toBe("llm_session");
       expect(captured.moves).toHaveLength(10);
       for (const [i, body] of captured.moves.entries()) {
         expect(Object.keys(body).sort()).toEqual(["candidates", "currentVariant", "history", "n", "round", "sessionToken"]);

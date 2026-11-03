@@ -33,9 +33,12 @@ new_sqlite_classes = ["NeuronCounter"]
 [vars]
 AI_MODEL = "@cf/meta/llama-3.2-3b-instruct"
 NEURON_DAILY_BUDGET = "8000"
-# Public Turnstile site key. This is Cloudflare's always-pass TEST key; replace it with a real
-# widget's site key before deploying (and set the matching TURNSTILE_SECRET_KEY secret).
-TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
+# Public site key of the managed "glowfinder" Turnstile widget (domains: the workers.dev
+# hostname, localhost, 127.0.0.1). Its secret is the TURNSTILE_SECRET_KEY Worker secret.
+TURNSTILE_SITE_KEY = "0x4AAAAAAFxbNSYjKx3gZuFa"
+# Frontend hostnames siteverify must report (comma-separated). Production only: never localhost.
+# .dev.vars overrides this for local development.
+TURNSTILE_HOSTNAMES = "glowfinder.troche.workers.dev"
 
 # Secrets (wrangler secret put ...): TURNSTILE_SECRET_KEY, SESSION_SIGNING_KEY.
 # Without them the live LLM endpoints answer 503 and the app plays the recorded exemplar.
