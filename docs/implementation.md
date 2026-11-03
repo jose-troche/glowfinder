@@ -2,6 +2,8 @@
 
 Companion to `docs/specs.md`. Build order, file layout, and the decisions worth locking down before code exists.
 
+> **Status: built.** This plan has been implemented. Where the build departed from it, the text below says what changed and why; the biggest change is a fifth strategy, Evolution, added after the M3 bake-off showed that ESM-2 does not beat random on GFP (`docs/specs.md` §1).
+
 ---
 
 ## 1. Stack
@@ -12,10 +14,10 @@ Two halves with a clean seam between them: a Python pipeline that runs once and 
 
 | Concern | Choice |
 |---|---|
-| Runtime | Python 3.11+, `uv` for dependency management |
+| Runtime | Python 3.12, `uv` for dependency management |
 | Data | `pandas`, `numpy` |
-| Model | `transformers` + `torch` (CPU) for ESM-2 |
-| Validation | `pytest` for the pipeline assertions |
+| Model | `transformers` + `torch` (CPU) for ESM-2; `numpy` for the evolutionary profile |
+| Validation | `pytest` for the pipeline assertions; an executed notebook for exploration |
 | Execution | Laptop or Colab; one command, reproducible |
 
 ### Runtime (TypeScript)
@@ -27,8 +29,8 @@ Two halves with a clean seam between them: a Python pipeline that runs once and 
 | Router | Hono |
 | Bundler | Vite for the frontend |
 | Charts | uPlot (~40KB) — lightweight and fast enough to redraw every round |
-| Structure viewer | Mol\* via CDN |
-| Tests | Vitest + `@cloudflare/vitest-pool-workers` |
+| Structure viewer | Mol\*, bundled by Vite and lazy-loaded when the structure panel first scrolls into view (a pinned npm dependency rather than a CDN script) |
+| Tests | Vitest + `@cloudflare/vitest-plugin` (the renamed successor of `@cloudflare/vitest-pool-workers`); Playwright for the UI |
 
 **No ML at runtime, in any form.** Everything the model contributes is a precomputed number in a static file. This is what keeps the project free and fast.
 
@@ -45,13 +47,21 @@ glowfinder/
 ├── pipeline/
 │   ├── pyproject.toml
 │   ├── README.md               # how to re-run from scratch
+│   ├── landscape-summary.md    # generated reports, committed
+│   ├── crosscheck-report.md
+│   ├── bakeoff-report.md
 │   ├── glowfinder_pipeline/
-│   │   ├── download.py         # fetch figshare TSV
+│   │   ├── __main__.py         # `uv run glowfinder-pipeline`: every stage, gated on the cross-check
+│   │   ├── constants.py
+│   │   ├── download.py         # fetch sources, verify checksums, write manifest
+│   │   ├── remote_zip.py       # one member out of a remote zip via HTTP range requests
+│   │   ├── reference.py        # construct (P42212 + F64L), burial, annotations
 │   │   ├── clean.py            # parse, +2 offset, validate
-│   │   ├── esm_score.py        # single forward pass → matrix
+│   │   ├── esm_score.py        # masked marginals → matrix
+│   │   ├── evolution.py        # MSA → site-independent profile matrix
 │   │   ├── crosscheck.py       # vs. ProteinGym
-│   │   ├── encode.py           # → binary artifacts
-│   │   └── reference.py        # P42212 sequence + annotations
+│   │   ├── bakeoff.py          # M3: non-LLM strategies offline
+│   │   └── encode.py           # → binary artifacts
 │   ├── notebooks/
 │   │   └── exploration.ipynb   # the narrative version, for the writeup
 │   └── tests/
@@ -61,6 +71,8 @@ glowfinder/
 │       ├── variants.bin
 │       ├── variants.idx.json
 │       ├── esm-matrix.bin
+│       ├── profile-matrix.bin
+│       ├── AF-P42212-F1-model_v6.pdb
 │       ├── reference.json
 │       ├── exemplar-llm-run.json
 │       └── provenance.json
@@ -71,11 +83,13 @@ glowfinder/
 │   │   ├── engine.ts           # round loop, selection, scoring
 │   │   ├── rng.ts              # seeded, deterministic
 │   │   ├── neighborhood.ts     # eligible candidate generation
+│   │   ├── scores.ts           # additive matrix scores
 │   │   └── strategies/
 │   │       ├── random.ts
 │   │       ├── conservative.ts
 │   │       ├── esm.ts
-│   │       └── llm.ts          # calls the Worker
+│   │       ├── profile.ts      # evolution
+│   │       └── llm.ts          # live (calls the Worker) or recorded
 │   ├── data/
 │   │   ├── loader.ts           # ArrayBuffer → typed views
 │   │   └── codec.ts            # mutation int-encoding, shared with pipeline
@@ -83,7 +97,9 @@ glowfinder/
 │       ├── chart.ts
 │       ├── structure.ts
 │       ├── scoreboard.ts
-│       └── narrative.ts
+│       ├── narrative.ts
+│       ├── llmSession.ts       # Turnstile → session → /api/llm-move
+│       └── urlState.ts         # shareable seeded URLs
 ├── worker/
 │   ├── index.ts
 │   ├── env.ts
@@ -95,8 +111,14 @@ glowfinder/
 │   │   └── turnstile.ts
 │   ├── ai/prompts.ts
 │   └── budget/NeuronCounter.ts
+├── scripts/
+│   ├── bakeoff.ts              # the M3 bake-off through the TypeScript engine
+│   └── record-exemplar.ts      # records exemplar-llm-run.json against a running Worker
+├── e2e/                        # Playwright
 ├── wrangler.toml
 └── test/
+    ├── unit/                   # Vitest, Node
+    └── worker/                 # Vitest, inside workerd
 ```
 
 The encoding scheme appears twice — `pipeline/encode.py` and `src/data/codec.ts`. **Those two must agree exactly.** See §4.3 for how that is enforced rather than hoped for.
@@ -109,7 +131,7 @@ The encoding scheme appears twice — `pipeline/encode.py` and `src/data/codec.t
 
 ```python
 # Pseudocode for the part that matters
-WT = load_p42212_sequence()          # 238 aa, from UniProt
+WT = construct_sequence()            # 238 aa: P42212 + F64L, from the figshare reference DNA
 
 for row in tsv:
     muts = parse_mutations(row.aaMutations)   # e.g. "SA108T:SV120L"
@@ -119,6 +141,8 @@ for row in tsv:
             f"Offset mismatch at {pos}: expected {WT[pos-1]}, got {wt_aa}"
         )
 ```
+
+Validate against the construct, not plain UniProt P42212: the mutagenised protein carries F64L, so P42212 fails at position 64 (`docs/specs.md` §3.3).
 
 **That assertion is the most important line in the repository.** Without it, an offset error produces a dataset that is entirely wrong while every number still looks plausible. With it, the pipeline refuses to run at all. Fail loudly at the first mismatch; do not count and warn.
 
@@ -135,10 +159,13 @@ That summary is also a README table. It's the clearest possible illustration of 
 
 ```python
 model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t12_35M_UR50D")
-# One pass. Not 50,000.
-logits = model(**tokenizer(WT_SEQUENCE, return_tensors="pt")).logits
-log_probs = torch.log_softmax(logits, dim=-1)   # → (1, L+2, vocab)
+# Masked marginals: mask each position in turn (238 passes, batched), not one pass per variant.
+batch = tokens.repeat(len(positions), 1)
+batch[range(len(positions)), positions + 1] = tokenizer.mask_token_id   # +1 for BOS
+log_probs = torch.log_softmax(model(batch).logits, dim=-1)
 ```
+
+The plan's single wild-type pass is kept as a comparison. Masked marginals are what ProteinGym reports and are shipped; neither carries much signal on GFP (see §3.3).
 
 Strip the BOS/EOS offsets carefully — ESM tokenizers add special tokens and an off-by-one here is the second-most-likely silent bug in the project. Validate by checking that the argmax at a handful of positions matches the wild-type residue.
 
@@ -148,9 +175,13 @@ Variant score = Σ over substitutions of `log_prob[pos][mutant] − log_prob[pos
 
 Make the model name a CLI flag. Running 8M vs. 35M and reporting both correlations is a genuinely interesting README result and costs one extra command.
 
+### 3.2b `evolution.py`
+
+Added after M3. Reads ProteinGym's A2M alignment for the assay, keeps the focus (uppercase) columns, drops sequences that are mostly gaps, weights each sequence by 1 / (number of sequences at ≥ 80% identity, θ = 0.2), and turns weighted per-column counts plus a pseudocount of 1 into log-frequencies. Same 238 × 20 shape and scoring as ESM-2, so the runtime treats both identically.
+
 ### 3.3 `crosscheck.py`
 
-Load ProteinGym's `GFP_AEQVI_Sarkisyan_2016` via `datasets`, join on normalized mutation strings, report:
+Load ProteinGym's `GFP_AEQVI_Sarkisyan_2016` (downloaded directly from the v1.3 release, not through `datasets`), join on normalized mutation strings, report:
 
 - Coverage: fraction of local variants present in ProteinGym and vice versa.
 - Spearman correlation between `medianBrightness` and `DMS_score`.
@@ -159,6 +190,8 @@ Load ProteinGym's `GFP_AEQVI_Sarkisyan_2016` via `datasets`, join on normalized 
 Expect near-perfect agreement. If correlation comes back low, **the bug is almost certainly the offset or the mutation-string normalization** — check those two before suspecting the data.
 
 Output a markdown report to `pipeline/crosscheck-report.md`, committed. This artifact is what makes the project credible to a technical reader.
+
+Result: ρ = 0.9999, full coverage. The remaining differences come from ProteinGym averaging per-genotype medians, which `reconcile` reproduces from the raw nucleotide TSV. The report also lists each zero-shot model's correlation next to ProteinGym's published figure. The pipeline stops if ρ < 0.999.
 
 ### 3.4 `encode.py`
 
@@ -184,7 +217,7 @@ With 238 positions × 20 amino acids, codes fit comfortably in a `uint16`.
 
 Write the amino acid order, quantization min/scale, and format version into `variants.idx.json`. The TypeScript loader reads those rather than hardcoding them.
 
-Target under 1MB gzipped. If it comes in larger, drop the low-confidence subset from the shipped artifact rather than reaching for a database.
+Target under 1MB gzipped. If it comes in larger, drop the low-confidence subset from the shipped artifact rather than reaching for a database. Actual: about 390 KB gzipped with everything included. The 16-byte header is `"GLOW"`, version, variant count and max mutations.
 
 ---
 
@@ -212,15 +245,20 @@ Pure functions, no DOM, no network. Takes `(dataset, strategies, config, seed)` 
 ```ts
 export interface RoundResult {
   round: number;
-  perStrategy: Record<StrategyId, {
-    proposals: { variant: number[]; brightness: number; isDark: boolean }[];
+  perStrategy: Partial<Record<StrategyId, {
+    proposals: { codes: number[]; brightness: number; isDark: boolean; /* … */ }[];
     bestSoFar: number;
-    reasoning?: string;      // LLM only
-  }>;
+    current: number;          // reference point after (greedy) selection
+    radiusUsed: number;       // wider than configured when the measured set runs thin
+    hits: number;
+    dark: number;
+    reasoning?: string;       // LLM only
+    fallback?: boolean;       // LLM only: unusable reply, random picks
+  }>>;
 }
 ```
 
-An async generator fits well: the UI consumes rounds as they complete, and the LLM strategy's network latency doesn't block the others. Run the three local strategies synchronously and `await` only the LLM.
+An async generator fits well: the UI consumes rounds as they complete, and the LLM strategy's network latency doesn't block the others. Run the four local strategies synchronously and `await` only the LLM. Each strategy draws from its own seeded stream (`seed:strategyId`), so adding or removing one doesn't change the others' runs.
 
 Keep the engine free of UI and transport concerns so it can be unit-tested directly against the real dataset. These tests are fast and meaningful.
 
@@ -235,9 +273,9 @@ Cheap to build, and it catches the one class of bug that would otherwise surface
 
 ### 4.4 LLM strategy (`src/sim/strategies/llm.ts` + `worker/routes/llmMove.ts`)
 
-Client sends current variant, candidate list, its own tried-history with revealed results, and round number. Server returns picks plus reasoning.
+Client sends current variant, a seeded sample of 24 candidates from the neighborhood (`LLM_CANDIDATES`), its own tried-history with revealed results, and round number. Server returns picks plus reasoning.
 
-> ⚠️ **Server-side enforcement, not client-side discipline.** Reject any request whose `candidates` entries carry brightness or score fields. The client should never send them, but the server must not rely on that — an accidental leak here silently invalidates the entire result, and nothing in the output would look wrong.
+> ⚠️ **Server-side enforcement, not client-side discipline.** Reject any request whose `candidates` entries carry brightness or score fields. As built, candidates must be bare arrays of mutation codes and any unknown key in the body is rejected. The client should never send them, but the server must not rely on that — an accidental leak here silently invalidates the entire result, and nothing in the output would look wrong.
 
 Prompt structure in `worker/ai/prompts.ts`:
 
@@ -265,9 +303,9 @@ Cap `reasoning` length server-side before returning it.
 
 `data/artifacts/exemplar-llm-run.json` holds one complete recorded LLM run: every round, every pick, every reasoning string, same shape the live endpoint returns.
 
-The frontend plays it back with the same rendering path as a live run, labeled clearly as pre-recorded. Generate it once during M5 and commit it.
+The frontend plays it back with the same rendering path as a live run, labeled clearly as pre-recorded. Generate it once during M5 and commit it (`npm run record-exemplar` against `wrangler dev`). Each round also stores the variants actually played (`played`), since fallback rounds draw random picks; replay uses those, so it is exact. If the visitor's settings differ from the recording's, the app switches to the recording's settings and says so.
 
-This is the single highest-leverage cost decision in the project: every visitor sees the full four-way comparison, and the daily neuron budget is spent only by people who deliberately ask for a live run.
+This is the single highest-leverage cost decision in the project: every visitor sees the full five-way comparison, and the daily neuron budget is spent only by people who deliberately ask for a live run.
 
 ---
 
@@ -277,13 +315,16 @@ This is the single highest-leverage cost decision in the project: every visitor 
 name = "glowfinder"
 main = "worker/index.ts"
 compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./public"
 binding = "ASSETS"
+run_worker_first = ["/api/*"]   # everything else is served without invoking the Worker
 
 [ai]
 binding = "AI"
+remote = true                   # `wrangler dev` uses real Workers AI
 
 [[ratelimits]]
 name = "LLM_LIMITER"
@@ -303,9 +344,11 @@ new_sqlite_classes = ["NeuronCounter"]
 [vars]
 AI_MODEL = "@cf/meta/llama-3.2-3b-instruct"
 NEURON_DAILY_BUDGET = "8000"
+TURNSTILE_SITE_KEY = "…"                  # public
+TURNSTILE_HOSTNAMES = "glowfinder.troche.workers.dev"
 ```
 
-Secrets: `TURNSTILE_SECRET_KEY`, `SESSION_SIGNING_KEY`.
+Secrets: `TURNSTILE_SECRET_KEY`, `SESSION_SIGNING_KEY`. Without them the LLM endpoints answer `LLM_UNAVAILABLE` and the app plays the recorded run. `.dev.vars.example` holds Cloudflare's always-pass test keys and overrides the site key and hostname allowlist for local development.
 
 > ⚠️ `new_sqlite_classes` is mandatory — the legacy key-value-backed Durable Object storage requires the Workers Paid plan. **No KV namespaces in this project at all**, by design (`docs/specs.md` §8).
 
@@ -324,8 +367,10 @@ ProteinGym comparison, correlation report committed. **Do not proceed until this
 ### M3 — ESM scoring + offline bake-off
 Score matrix. Then, in a notebook, run all three non-LLM strategies offline in Python against the real data. **Confirm the strategies actually separate before building any UI.** If ESM doesn't beat random here, the premise is wrong and it's far better to learn that in a notebook than after a week of frontend work. Tune rounds, proposals per round, and neighborhood size here.
 
+**Outcome:** ESM doesn't beat random. Its scores match ProteinGym's published ones, so this is the model, not a bug. The evolutionary profile was added as a fourth local strategy, and the bake-off (`pipeline/bakeoff-report.md`) settled on 10 rounds × 5 proposals, radius 3, greedy selection.
+
 ### M4 — Encode + static app
-Binary artifacts, codec test vectors, loader, simulation engine, basic chart. Three strategies running in the browser. **Deploy it.** At this point the core product is complete and free.
+Binary artifacts, codec test vectors, loader, simulation engine, basic chart. Four strategies running in the browser. **Deploy it.** At this point the core product is complete and free.
 
 ### M5 — Structure view + narrative
 Mol* with mutated positions highlighted by outcome. Three-act framing, dark-variant counter, final scoreboard. This is the milestone that turns a chart into an explainer.
@@ -348,12 +393,15 @@ README with the crosscheck result, the landscape statistics, the architecture, a
 **Runtime (Vitest):**
 - Codec test vectors match the pipeline's (§4.3).
 - Seeded RNG: same seed produces an identical run, twice.
-- Engine against the real dataset: ESM strategy beats random over 20 seeded runs. If this fails, something regressed.
+- Engine against the real dataset: the evolution strategy beats random over 20 seeded runs, and ESM-2 does not beat evolution. If either fails, something regressed.
+- The recorded LLM run replays exactly.
 - Worker rejects requests whose candidates carry score fields.
-- Turnstile failure returns 403 and never reaches the AI binding.
+- Turnstile failure returns 403 and never reaches the AI binding; siteverify must also return the expected action and an allowlisted hostname.
 - Circuit breaker at threshold returns `AI_BUDGET_EXHAUSTED`.
 
-The "ESM beats random over 20 seeds" test is the project's real regression test — it asserts the central claim still holds.
+The "evolution beats random over 20 seeds" test is the project's real regression test — it asserts the central claim still holds. (The plan said "ESM beats random"; that claim is false on GFP, see §6 M3.)
+
+**UI (Playwright, desktop and Pixel 7):** against the production build with `/api` mocked. The three acts, seeded reproducibility, shareable URLs, the structure view, no horizontal scroll, recorded and live LLM modes, and that live requests never carry untried brightness.
 
 ---
 
@@ -366,7 +414,7 @@ This is the repo that will get read most carefully, so the README carries real w
 - **The crosscheck result** — "rebuilt from raw figshare data, agrees with ProteinGym at ρ = 0.99." This sentence buys trust for everything else.
 - Architecture diagram showing the offline/runtime seam.
 - The +2 offset and log-scale gotchas, called out explicitly. Somebody else will hit them and find this via search.
-- Honest limitations: restricted search space, additive ESM scoring ignores epistasis, small model.
+- Honest limitations: restricted search space, additive scoring ignores epistasis, small models.
 - Full citations (`docs/specs.md` §13) and the license position (`docs/specs.md` §3.4).
 - Topics: `protein-engineering`, `esm2`, `deep-mutational-scanning`, `directed-evolution`, `bioinformatics`, `cloudflare-workers`, `typescript`.
 
@@ -378,10 +426,38 @@ This is the repo that will get read most carefully, so the README carries real w
 |---|---|
 | Search space restricted to measured variants | Every guess gets real ground truth; no model grades another model |
 | All ML offline, none at runtime | Free, fast, and no Python in the serving path |
-| Three strategies run fully client-side | Core experience costs nothing and needs no server |
+| Four strategies run fully client-side | Core experience costs nothing and needs no server |
 | No KV anywhere | No mutable server state; sidesteps the 1,000 writes/day limit entirely |
 | Binary artifacts, not JSON | Sub-1MB and fast parse on mobile |
 | Exemplar LLM run committed | Everyone sees the full comparison; budget spent only on request |
 | Build pipeline from raw, validate against ProteinGym | The wrangling is the bioinformatics, and the agreement is the credibility |
 | Seeded, reproducible runs | A stochastic demo nobody can reproduce proves nothing |
 | LLM never sees untried brightness; enforced server-side | The one leak that would invisibly invalidate everything |
+
+### Decisions made during the build
+
+| Decision | Rationale |
+|---|---|
+| Fifth strategy: evolutionary profile; ESM-2 kept and reported as measured | ESM-2 has almost no signal on GFP (M3). Reporting that is the honest result, and the profile shows what *does* work |
+| Validate against P42212 + F64L | That is the construct that was mutagenised |
+| Low-confidence variants flagged, never dropped | They are 97% of the data, and the artifact fits the budget anyway |
+| Greedy selection, radius 3, automatic widening | Tuned in the bake-off; the measured set thins out away from wild type |
+| LLM sees 24 sampled candidates | A full neighborhood is too long for a 3B model; the sample is seeded |
+| Mol\* bundled, not from a CDN | Pinned version, works offline in tests |
+| No CI; deploys are manual (`npm run deploy`) | The owner deploys directly; tests run locally before each deploy |
+
+---
+
+## 10. Deployment
+
+Manual, from a developer machine. There is no CI.
+
+1. Run the tests (`npm test`, `npm run test:e2e`).
+2. `npm run deploy` builds the app and runs `wrangler deploy`. The live URL is `https://glowfinder.troche.workers.dev`.
+
+One-time setup, already done:
+
+- A managed Turnstile widget for `glowfinder.troche.workers.dev`, `localhost` and `127.0.0.1` (`wrangler turnstile widget create`). Its site key is `TURNSTILE_SITE_KEY` in `wrangler.toml`; its secret is the `TURNSTILE_SECRET_KEY` Worker secret.
+- `SESSION_SIGNING_KEY`, a random 32-byte key, set as a Worker secret. Rotating it only invalidates sessions in progress.
+
+Secrets survive `wrangler deploy`. To serve the app from another hostname, add it to the widget (`wrangler turnstile widget update`) and to `TURNSTILE_HOSTNAMES`.
