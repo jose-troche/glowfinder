@@ -1,6 +1,6 @@
-# I raced two AIs against nature to make a jellyfish glow brighter. Nature won.
+# Why is biotech betting big on AI? A glowing example for non-experts
 
-*What a glowing protein taught me about where generative AI shines, and where it only sounds smart.*
+*I raced two AIs against nature to make a jellyfish glow brighter. Here's what that taught me about where generative AI shines, and where it only sounds smart.*
 
 ![glowfinder: five strategies hunt for a brighter jellyfish protein](01-hero.png)
 
