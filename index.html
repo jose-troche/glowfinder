@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>glowfinder</title>
+    <meta
+      name="description"
+      content="Five strategies hunt for a brighter jellyfish protein, scored against 51,715 real lab measurements."
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%233ee07f'/%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%233ee07f' stroke-opacity='.35' stroke-width='3'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="wrap">
+        <p class="brand"><span class="glow-dot" aria-hidden="true"></span>glowfinder</p>
+        <h1>Five strategies hunt for a brighter jellyfish protein. Only one knows where it's going.</h1>
+        <p class="sub">
+          Every guess is scored against a real measurement from the lab, never a simulation.
+        </p>
+      </div>
+    </header>
+
+    <main>
+      <div id="loading" class="wrap loading" role="status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="loading-text">Loading 51,715 measured proteins…</span>
+      </div>
+
+      <!-- Act 1 -->
+      <section id="setup" class="act wrap" aria-labelledby="setup-title" hidden>
+        <p class="act-label">Act 1 · The setup</p>
+        <h2 id="setup-title">This is GFP. It glows.</h2>
+        <div class="two-col">
+          <div class="prose">
+            <p>
+              Green fluorescent protein comes from the jellyfish <em>Aequorea victoria</em> and made modern cell
+              biology visible. In 2016, Sarkisyan and colleagues mutated it at random and measured how brightly
+              <strong id="stat-variants">51,715</strong> versions glowed.
+            </p>
+            <p>
+              That's a rare thing: a real map of what works and what doesn't for an entire protein.
+              <strong id="stat-visible">58%</strong> of the measured versions still glow visibly.
+            </p>
+            <aside class="callout">
+              <strong>The rules.</strong> We're exploring a known map, and the strategies don't get to see it. They
+              can only propose versions that were actually measured, so every guess gets a real score. A real lab
+              isn't limited to a precomputed library, and that's the price of honest scoring.
+            </aside>
+          </div>
+          <figure class="panel">
+            <figcaption>Fraction still glowing, by number of mutations</figcaption>
+            <div id="depth-bars" class="depth-bars" role="list"></div>
+            <p class="note">
+              <span id="stat-single">92%</span> of single mutants glow; by four mutations it's
+              <span id="stat-four">54%</span>. Wild-type brightness: <span id="stat-wt">3.72</span> (log₁₀).
+            </p>
+          </figure>
+        </div>
+        <figure class="panel heatmap-panel">
+          <figcaption>Where the protein tolerates change (positions 1–238)</figcaption>
+          <canvas id="heatmap" aria-label="Fraction of variants still glowing, per mutated position" role="img"></canvas>
+          <p id="heatmap-caption" class="note">
+            Each stripe is one residue: green means variants mutated there usually still glow, red means they usually
+            go dark. The yellow tick marks the chromophore (residues 65–67). Hover to inspect.
+          </p>
+        </figure>
+      </section>
+
+      <!-- Act 2 -->
+      <section id="race" class="act wrap" aria-labelledby="race-title" hidden>
+        <p class="act-label">Act 2 · The race</p>
+        <h2 id="race-title">Pick your strategies, watch them climb or go dark.</h2>
+
+        <form id="controls" class="controls panel" autocomplete="off">
+          <fieldset class="strategies">
+            <legend>Strategies</legend>
+            <div id="strategy-list" class="strategy-list"></div>
+            <div class="llm-mode" id="llm-mode" hidden>
+              <label><input type="radio" name="llm-mode" value="recorded" checked /> Recorded run (free)</label>
+              <label><input type="radio" name="llm-mode" value="live" /> Live (Workers AI, one quick check)</label>
+              <p id="llm-note" class="note"></p>
+            </div>
+          </fieldset>
+          <fieldset class="settings">
+            <legend>Settings</legend>
+            <div class="field">
+              <label for="seed">Seed</label>
+              <span class="seed-row"><input id="seed" name="seed" maxlength="32" pattern="[A-Za-z0-9_\-]+" required /><button type="button" id="reseed" class="icon-btn" aria-label="New random seed" title="New random seed">↻</button></span>
+            </div>
+            <label>Rounds <input id="rounds" name="rounds" type="number" min="3" max="20" /></label>
+            <label>Guesses per round <input id="per-round" name="n" type="number" min="1" max="10" /></label>
+            <label>Max mutations from current best <input id="radius" name="radius" type="number" min="1" max="8" /></label>
+          </fieldset>
+          <div class="actions">
+            <button id="run" type="submit" class="primary">Run the race</button>
+            <button id="skip" type="button" disabled>Skip to end</button>
+            <button id="share" type="button">Copy link</button>
+            <span id="race-status" class="status" role="status" aria-live="polite"></span>
+          </div>
+          <div id="turnstile-widget" class="turnstile" hidden></div>
+        </form>
+
+        <div class="race-grid">
+          <figure class="panel chart-panel">
+            <figcaption>Best brightness found so far</figcaption>
+            <div id="chart" class="chart"></div>
+          </figure>
+          <figure class="panel">
+            <figcaption>Proposals that killed the glow</figcaption>
+            <div id="dark-counters" class="dark-counters"></div>
+          </figure>
+          <figure class="panel scoreboard-panel">
+            <figcaption>Scoreboard</figcaption>
+            <div class="table-scroll">
+              <table class="scoreboard">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Strategy</th>
+                    <th scope="col" class="num">Best</th>
+                    <th scope="col" class="num">vs WT</th>
+                    <th scope="col" class="num">Glowing</th>
+                    <th scope="col" class="num">Dark</th>
+                  </tr>
+                </thead>
+                <tbody id="scoreboard"></tbody>
+              </table>
+            </div>
+          </figure>
+          <figure class="panel structure-panel" id="structure">
+            <figcaption>
+              Where <select id="structure-strategy" aria-label="Strategy shown on the structure"></select> has mutated
+            </figcaption>
+            <p class="structure-status note">The 3D view loads when you scroll here.</p>
+            <p class="legend note">
+              <span class="key bright"></span>every variant there glowed
+              <span class="key mixed"></span>some did
+              <span class="key dark"></span>none did
+              <span class="key chromo"></span>chromophore
+            </p>
+          </figure>
+          <figure class="panel log-panel">
+            <figcaption>Round by round</figcaption>
+            <ol id="commentary" class="commentary" reversed></ol>
+          </figure>
+          <figure class="panel reasoning-panel" id="reasoning-panel" hidden>
+            <figcaption>What the LLM said</figcaption>
+            <p id="reasoning-source" class="note"></p>
+            <div id="reasoning" class="reasoning-list"></div>
+          </figure>
+        </div>
+      </section>
+
+      <!-- Act 3 -->
+      <section id="lesson" class="act wrap" aria-labelledby="lesson-title" hidden>
+        <p class="act-label">Act 3 · The lesson</p>
+        <h2 id="lesson-title">What the race showed</h2>
+        <div id="lesson-body" class="prose"></div>
+        <aside class="callout so-what">
+          <h3>So what?</h3>
+          <p>
+            Drug and enzyme design face the same landscape at far larger scale. Every lab measurement costs days and
+            money, so whatever proposes the next batch of variants decides how fast a project moves. The best tools
+            today combine evolutionary information, structure and learned models. They're judged the same way this
+            page judges its strategies: against real measurements.
+          </p>
+        </aside>
+        <section class="limits">
+          <h3>What this page doesn't do</h3>
+          <ul>
+            <li>Strategies can only pick variants that were measured; a real campaign can make any mutation.</li>
+            <li>The model scores add up single-mutation effects and ignore epistasis on purpose.</li>
+            <li>The models are small: ESM-2 35M, a site-independent profile, and a 3B-parameter LLM.</li>
+            <li>The experiment's protein carries F64L relative to UniProt P42212; the 3D model is the AlphaFold model of P42212.</li>
+            <li>It isn't a design tool or a benchmark (see ProteinGym). Don't take anything here to a lab bench.</li>
+          </ul>
+        </section>
+      </section>
+    </main>
+
+    <footer class="wrap footer">
+      <p>
+        Data: Sarkisyan, K.S. et al. (2016) <em>Local fitness landscape of the green fluorescent protein.</em> Nature
+        533:397–401, doi:10.1038/nature17995 (CC BY 4.0, derived and re-encoded here). Validation and alignment:
+        Notin, P. et al. (2023) <em>ProteinGym</em>, NeurIPS Datasets and Benchmarks (MIT). ESM-2 (Lin et al., Meta AI),
+        UniProt P42212, AlphaFold DB AF-P42212-F1 (EMBL-EBI, CC BY 4.0), BLOSUM62 (Henikoff &amp; Henikoff 1992).
+      </p>
+      <p>
+        Educational, non-commercial. <a href="/artifacts/provenance.json">Provenance</a> ·
+        <a href="https://github.com/jose-troche/glowfinder">Source</a>
+      </p>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

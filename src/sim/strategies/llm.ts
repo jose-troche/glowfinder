@@ -42,11 +42,11 @@ export type LlmErrorCode =
   | "NETWORK";
 
 export class LlmError extends Error {
-  constructor(
-    readonly code: LlmErrorCode,
-    message: string,
-  ) {
+  readonly code: LlmErrorCode;
+
+  constructor(code: LlmErrorCode, message: string) {
     super(message);
+    this.code = code;
   }
 }
 
@@ -94,9 +94,12 @@ export interface ExemplarRound {
   offered: number[][];
   /** indices into offered, exactly as the endpoint returned them */
   picks: number[];
+  /** the variants actually played after the engine's validation and any random top-up */
+  played: number[][];
   reasoning: string;
   neuronsEstimated: number;
   fallback?: boolean;
+  fallbackReason?: string;
 }
 
 export interface ExemplarRun {
@@ -116,14 +119,15 @@ export function createExemplarStrategy(exemplar: ExemplarRun): Strategy {
     propose(ctx): Proposal {
       const r = exemplar.rounds.find((x) => x.round === ctx.round);
       if (!r) return { picks: [], fallbackReason: "recording has no such round" };
-      const picks = r.picks
-        .map((k) => r.offered[k])
-        .map((codes) => (codes ? ctx.dataset.lookup.get(variantKey(codes)) : undefined))
+      // Replay what was played, not just what the model said: top-ups drew on the
+      // recording's random stream, which playback doesn't reproduce.
+      const picks = r.played
+        .map((codes) => ctx.dataset.lookup.get(variantKey(codes)))
         .filter((v): v is number => v !== undefined);
       return {
         picks,
         reasoning: r.reasoning,
-        ...(r.fallback && { fallback: true, fallbackReason: "model reply could not be parsed; random picks" }),
+        ...(r.fallback && { fallback: true, fallbackReason: r.fallbackReason ?? "model reply could not be parsed; random picks" }),
       };
     },
   };
