@@ -12,6 +12,9 @@ export interface BudgetStatus {
   exhausted: boolean;
 }
 
+/** The stored total is a float sum of reservations and corrections; report it to 0.01 neuron. */
+const report = (neurons: number) => Math.round(neurons * 100) / 100;
+
 export function utcDay(now = Date.now()): string {
   return new Date(now).toISOString().slice(0, 10);
 }
@@ -40,16 +43,16 @@ export class NeuronCounter extends DurableObject<Env> {
   status(budget: number, now = Date.now()): BudgetStatus {
     const day = utcDay(now);
     const spent = this.spent(day);
-    return { day, spent, budget, exhausted: spent >= budget };
+    return { day, spent: report(spent), budget, exhausted: spent >= budget };
   }
 
   /** Reserve an estimated spend before calling the model; refuses at or past the budget. */
   reserve(estimate: number, budget: number, now = Date.now()): BudgetStatus & { granted: boolean } {
     const day = utcDay(now);
     const spent = this.spent(day);
-    if (spent + estimate > budget) return { day, spent, budget, exhausted: true, granted: false };
+    if (spent + estimate > budget) return { day, spent: report(spent), budget, exhausted: true, granted: false };
     this.add(day, estimate);
-    return { day, spent: spent + estimate, budget, exhausted: spent + estimate >= budget, granted: true };
+    return { day, spent: report(spent + estimate), budget, exhausted: spent + estimate >= budget, granted: true };
   }
 
   /** Correct a reservation once the real usage is known (delta may be negative). */

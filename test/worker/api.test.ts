@@ -111,6 +111,8 @@ describe("POST /api/llm-move", () => {
     const r = await h.call("/api/llm-move", move(await h.session(), { n: 1 }));
     expect(r.json.neuronsEstimated).toBe(6.32);
     expect(r.json.fallback).toBeUndefined();
+    // reservation + correction is a float sum; the reported total is rounded
+    expect((await h.call("/api/config")).json.llm.budget.spent).toBe(6.32);
   });
 
   it("one Turnstile session covers a whole run", async () => {
